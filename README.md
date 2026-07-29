@@ -1,35 +1,18 @@
 # GeoBancas RD
 
-Base profesional compatible con Vercel para el Sistema de Geolocalización y Supervisión de Bancas.
+Versión con líneas múltiples de proximidad.
 
-## Ejecutar localmente
+Al seleccionar una banca, el sistema calcula y muestra simultáneamente:
+- escuela más cercana (morado)
+- centro de salud más cercano (cian)
 
-```bash
-npm install
-npm run dev
-```
+La estructura `analysisTargets` permite agregar en el futuro iglesias, CAID, destacamentos y otras capas sin reescribir el motor de líneas.
 
-Abre `http://localhost:3000`.
 
-## Desplegar en Vercel
+## Corrección de interfaz modular
 
-1. Sube este contenido al repositorio `Sicologo/geobancas-rd`.
-2. Importa el repositorio desde Vercel.
-3. Vercel detectará Next.js automáticamente.
-4. Presiona **Deploy**.
-
-## Estado actual
-
-- Dashboard responsive.
-- Mapa con MapLibre y OpenStreetMap.
-- Búsqueda y filtros.
-- API de salud en `/api/health`.
-- Datos demostrativos.
-
-## Próxima integración
-
-- PostgreSQL + PostGIS.
-- Importación real del Excel.
-- Autenticación y roles.
-- Auditoría e inspecciones.
-- Capas de escuelas, iglesias y otros lugares.
+- Controles flotantes centrados para evitar solapamientos con el panel geográfico.
+- Modo mapa limpio reversible: al pulsarlo nuevamente restaura paneles, líneas, estadísticas y ficha sin perder la selección.
+- Líneas de proximidad de escuelas y salud conservadas.
+- Visibilidad individual para bancas, escuelas, salud, líneas, estadísticas, ficha de detalle, estado inferior y panel de control.
+- El botón X del panel conserva su animación y puede reabrirse desde la barra central.
