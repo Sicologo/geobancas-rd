@@ -1,152 +1,30 @@
 "use client";
+import {useEffect,useRef} from "react";
+import maplibregl,{Map,MapMouseEvent} from "maplibre-gl";
+import type {Banca,Escuela,Salud} from "@/lib/sample-data";
 
-import { useEffect, useRef } from "react";
-import maplibregl, { Map, MapMouseEvent } from "maplibre-gl";
-import type { Banca, Escuela } from "@/lib/sample-data";
-
-type Props = {
-  data: Banca[];
-  escuelas: Escuela[];
-  showEscuelas: boolean;
-  selectedId?: string;
-  selectedEscuelaCodigo?: string;
-  onSelect: (banca: Banca) => void;
-  onSelectEscuela: (escuela: Escuela) => void;
-};
-
-const statusColor: Record<Banca["estatus"], string> = {
-  Legal: "#2ecc71", Ilegal: "#ff5c73", Pendiente: "#f5b942", Suspendida: "#87a4bf",
-};
-
-function bancasGeoJSON(data: Banca[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
-  return { type: "FeatureCollection", features: data.map((b) => ({
-    type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] },
-    properties: { ...b, color: statusColor[b.estatus] },
-  })) };
-}
-
-function escuelasGeoJSON(data: Escuela[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
-  return { type: "FeatureCollection", features: data.map((e) => ({
-    type: "Feature", geometry: { type: "Point", coordinates: [e.lng, e.lat] }, properties: { ...e },
-  })) };
-}
-
-const emptyLine: GeoJSON.FeatureCollection<GeoJSON.LineString> = { type: "FeatureCollection", features: [] };
-
-export default function GeoMap({ data, escuelas, showEscuelas, selectedId, selectedEscuelaCodigo, onSelect, onSelectEscuela }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
-  const dataRef = useRef(data);
-  const escuelasRef = useRef(escuelas);
-  const onSelectRef = useRef(onSelect);
-  const onSelectEscuelaRef = useRef(onSelectEscuela);
-
-  useEffect(() => { dataRef.current = data; }, [data]);
-  useEffect(() => { escuelasRef.current = escuelas; }, [escuelas]);
-  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
-  useEffect(() => { onSelectEscuelaRef.current = onSelectEscuela; }, [onSelectEscuela]);
-
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    const dominicanRepublicBounds: [[number, number], [number, number]] = [
-      [-72.15, 17.30], // Suroeste: frontera, Pedernales y mar territorial cercano
-      [-68.05, 20.15], // Noreste: costa norte, Samaná y La Altagracia
-    ];
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      center: [-70.1627, 18.7357],
-      zoom: 7.15,
-      minZoom: 6.6,
-      maxZoom: 19,
-      maxBounds: dominicanRepublicBounds,
-      renderWorldCopies: false,
-      style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } },
-        layers: [{ id: "osm", type: "raster", source: "osm" }] },
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.addControl(new maplibregl.FullscreenControl(), "top-right");
-
-    map.on("load", () => {
-      map.addSource("bancas", { type: "geojson", data: bancasGeoJSON(dataRef.current), cluster: true, clusterMaxZoom: 13, clusterRadius: 52 });
-      map.addLayer({ id: "clusters", type: "circle", source: "bancas", filter: ["has", "point_count"], paint: {
-        "circle-color": ["step", ["get", "point_count"], "#1593e5", 20, "#0c56b3", 100, "#08111d"],
-        "circle-radius": ["step", ["get", "point_count"], 19, 20, 24, 100, 30], "circle-stroke-width": 3, "circle-stroke-color": "#f8fbff", "circle-opacity": .92,
-      }});
-      map.addLayer({ id: "cluster-count", type: "symbol", source: "bancas", filter: ["has", "point_count"], layout: {
-        "text-field": ["get", "point_count_abbreviated"], "text-size": 12, "text-font": ["Open Sans Bold"], "text-allow-overlap": true,
-      }, paint: { "text-color": "#f8fbff" } });
-      map.addLayer({ id: "unclustered-point", type: "circle", source: "bancas", filter: ["!", ["has", "point_count"]], paint: {
-        "circle-color": ["get", "color"], "circle-radius": 8, "circle-stroke-width": 3, "circle-stroke-color": "#f8fbff", "circle-opacity": .96,
-      }});
-
-      map.addSource("escuelas", { type: "geojson", data: escuelasGeoJSON(escuelasRef.current), cluster: true, clusterMaxZoom: 12, clusterRadius: 45 });
-      map.addLayer({ id: "school-clusters", type: "circle", source: "escuelas", filter: ["has", "point_count"], layout: { visibility: "visible" }, paint: {
-        "circle-color": "#8b5cf6", "circle-radius": ["step", ["get", "point_count"], 16, 20, 21, 100, 27], "circle-stroke-width": 3, "circle-stroke-color": "#f8fbff", "circle-opacity": .9,
-      }});
-      map.addLayer({ id: "school-cluster-count", type: "symbol", source: "escuelas", filter: ["has", "point_count"], layout: {
-        visibility: "visible", "text-field": ["get", "point_count_abbreviated"], "text-size": 11, "text-font": ["Open Sans Bold"], "text-allow-overlap": true,
-      }, paint: { "text-color": "#fff" } });
-      map.addLayer({ id: "school-point", type: "circle", source: "escuelas", filter: ["!", ["has", "point_count"]], layout: { visibility: "visible" }, paint: {
-        "circle-color": "#8b5cf6", "circle-radius": 7, "circle-stroke-width": 3, "circle-stroke-color": "#f8fbff", "circle-opacity": .96,
-      }});
-
-      map.addSource("proximity-line", { type: "geojson", data: emptyLine });
-      map.addLayer({ id: "proximity-line", type: "line", source: "proximity-line", paint: { "line-color": "#22c9f4", "line-width": 3, "line-dasharray": [2, 2] } });
-
-      const expandCluster = async (sourceName: string, layerName: string, event: MapMouseEvent) => {
-        const features = map.queryRenderedFeatures(event.point, { layers: [layerName] });
-        const clusterId = features[0]?.properties?.cluster_id;
-        const source = map.getSource(sourceName) as maplibregl.GeoJSONSource;
-        if (clusterId === undefined) return;
-        const zoom = await source.getClusterExpansionZoom(clusterId);
-        const coordinates = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
-        map.easeTo({ center: coordinates, zoom });
-      };
-      map.on("click", "clusters", (e) => expandCluster("bancas", "clusters", e));
-      map.on("click", "school-clusters", (e) => expandCluster("escuelas", "school-clusters", e));
-      map.on("click", "unclustered-point", (event) => {
-        const id = event.features?.[0]?.properties?.id as string | undefined;
-        const banca = dataRef.current.find((item) => item.id === id);
-        if (banca) onSelectRef.current(banca);
-      });
-      map.on("click", "school-point", (event) => {
-        const codigo = event.features?.[0]?.properties?.codigo as string | undefined;
-        const escuela = escuelasRef.current.find((item) => item.codigo === codigo);
-        if (escuela) onSelectEscuelaRef.current(escuela);
-      });
-      ["clusters", "unclustered-point", "school-clusters", "school-point"].forEach((layer) => {
-        map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
-      });
-    });
-    mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-  }, []);
-
-  useEffect(() => { const map = mapRef.current; if (!map?.isStyleLoaded()) return; (map.getSource("bancas") as maplibregl.GeoJSONSource | undefined)?.setData(bancasGeoJSON(data)); }, [data]);
-  useEffect(() => { const map = mapRef.current; if (!map?.isStyleLoaded()) return; (map.getSource("escuelas") as maplibregl.GeoJSONSource | undefined)?.setData(escuelasGeoJSON(escuelas)); }, [escuelas]);
-  useEffect(() => {
-    const map = mapRef.current; if (!map?.isStyleLoaded()) return;
-    const visibility = showEscuelas ? "visible" : "none";
-    ["school-clusters", "school-cluster-count", "school-point"].forEach((id) => map.setLayoutProperty(id, "visibility", visibility));
-  }, [showEscuelas]);
-
-  useEffect(() => {
-    const map = mapRef.current; if (!map?.isStyleLoaded()) return;
-    const source = map.getSource("proximity-line") as maplibregl.GeoJSONSource | undefined;
-    const banca = data.find((item) => item.id === selectedId);
-    if (!banca) { source?.setData(emptyLine); return; }
-    map.flyTo({ center: [banca.lng, banca.lat], zoom: Math.max(map.getZoom(), 14), duration: 750 });
-    const line: GeoJSON.FeatureCollection<GeoJSON.LineString> = { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[banca.lng, banca.lat], [banca.escuelaLng, banca.escuelaLat]] } }] };
-    source?.setData(line);
-  }, [selectedId, data]);
-
-  useEffect(() => {
-    const map = mapRef.current; const escuela = escuelas.find((item) => item.codigo === selectedEscuelaCodigo); if (!map || !escuela) return;
-    map.flyTo({ center: [escuela.lng, escuela.lat], zoom: Math.max(map.getZoom(), 14), duration: 750 });
-  }, [selectedEscuelaCodigo, escuelas]);
-
-  return <div ref={containerRef} className="map" aria-label="Mapa nacional de bancas y centros educativos" />;
+type Point={lat:number;lng:number};
+type Props={data:Banca[];escuelas:Escuela[];salud:Salud[];showEscuelas:boolean;showSalud:boolean;selectedId?:string;selectedEscuelaCodigo?:string;selectedSaludId?:string;simulationPoint?:Point|null;onSelect:(b:Banca)=>void;onSelectEscuela:(e:Escuela)=>void;onSelectSalud:(s:Salud)=>void;onSimulationPoint:(p:Point)=>void;simulationMode:boolean};
+const statusColor:Record<Banca["estatus"],string>={Legal:"#2ecc71",Ilegal:"#ff5c73",Pendiente:"#f5b942",Suspendida:"#87a4bf"};
+const fc=(items:any[],kind:"banca"|"escuela"|"salud"):GeoJSON.FeatureCollection<GeoJSON.Point>=>({type:"FeatureCollection",features:items.map((x:any)=>({type:"Feature",geometry:{type:"Point",coordinates:[x.lng,x.lat]},properties:{...x,color:kind==="banca"?statusColor[x.estatus]:kind==="escuela"?"#8b5cf6":"#22c9f4"}}))});
+const emptyLine:GeoJSON.FeatureCollection<GeoJSON.LineString>={type:"FeatureCollection",features:[]};
+const emptyPoint:GeoJSON.FeatureCollection<GeoJSON.Point>={type:"FeatureCollection",features:[]};
+export default function GeoMap(p:Props){
+ const el=useRef<HTMLDivElement|null>(null), mapRef=useRef<Map|null>(null), refs=useRef(p); useEffect(()=>{refs.current=p},[p]);
+ useEffect(()=>{if(!el.current||mapRef.current)return; const map=new maplibregl.Map({container:el.current,center:[-70.1627,18.7357],zoom:7.15,minZoom:6.6,maxZoom:19,maxBounds:[[-72.15,17.3],[-68.05,20.15]],renderWorldCopies:false,style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},layers:[{id:"osm",type:"raster",source:"osm"}]}}); map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
+ map.on("load",()=>{
+  const addCluster=(id:string,data:any[],color:string)=>{map.addSource(id,{type:"geojson",data:fc(data,id==="bancas"?"banca":id==="escuelas"?"escuela":"salud"),cluster:true,clusterMaxZoom:13,clusterRadius:48});map.addLayer({id:`${id}-clusters`,type:"circle",source:id,filter:["has","point_count"],paint:{"circle-color":color,"circle-radius":["step",["get","point_count"],17,20,22,100,28],"circle-stroke-width":3,"circle-stroke-color":"#f8fbff","circle-opacity":.92}});map.addLayer({id:`${id}-count`,type:"symbol",source:id,filter:["has","point_count"],layout:{"text-field":["get","point_count_abbreviated"],"text-size":11,"text-font":["Open Sans Bold"],"text-allow-overlap":true},paint:{"text-color":"#fff"}});map.addLayer({id:`${id}-point`,type:"circle",source:id,filter:["!",["has","point_count"]],paint:{"circle-color":["get","color"],"circle-radius":7,"circle-stroke-width":3,"circle-stroke-color":"#fff"}})};
+  addCluster("bancas",refs.current.data,"#0c56b3");addCluster("escuelas",refs.current.escuelas,"#8b5cf6");addCluster("salud",refs.current.salud,"#22c9f4");
+  map.addSource("analysis-lines",{type:"geojson",data:emptyLine});map.addLayer({id:"analysis-lines",type:"line",source:"analysis-lines",paint:{"line-color":["get","color"],"line-width":3,"line-dasharray":[2,2]}});
+  map.addSource("simulation",{type:"geojson",data:emptyPoint});map.addLayer({id:"simulation-ring",type:"circle",source:"simulation",paint:{"circle-radius":15,"circle-color":"rgba(12,86,179,.2)","circle-stroke-color":"#22c9f4","circle-stroke-width":4}});
+  const expand=async(source:string,layer:string,e:MapMouseEvent)=>{const f=map.queryRenderedFeatures(e.point,{layers:[layer]})[0];if(!f)return;const z=await (map.getSource(source) as maplibregl.GeoJSONSource).getClusterExpansionZoom(f.properties?.cluster_id);map.easeTo({center:(f.geometry as GeoJSON.Point).coordinates as [number,number],zoom:z})};
+  ["bancas","escuelas","salud"].forEach(id=>{map.on("click",`${id}-clusters`,e=>expand(id,`${id}-clusters`,e));map.on("mouseenter",`${id}-clusters`,()=>map.getCanvas().style.cursor="pointer");map.on("mouseleave",`${id}-clusters`,()=>map.getCanvas().style.cursor="")});
+  map.on("click","bancas-point",e=>{const id=e.features?.[0]?.properties?.id;const x=refs.current.data.find(v=>v.id===id);if(x)refs.current.onSelect(x)});map.on("click","escuelas-point",e=>{const id=e.features?.[0]?.properties?.codigo;const x=refs.current.escuelas.find(v=>v.codigo===id);if(x)refs.current.onSelectEscuela(x)});map.on("click","salud-point",e=>{const id=e.features?.[0]?.properties?.id;const x=refs.current.salud.find(v=>v.id===id);if(x)refs.current.onSelectSalud(x)});
+  map.on("click",e=>{if(refs.current.simulationMode && !(e.originalEvent.target as HTMLElement).closest(".maplibregl-marker")) refs.current.onSimulationPoint({lng:e.lngLat.lng,lat:e.lngLat.lat})});
+ }); mapRef.current=map;return()=>{map.remove();mapRef.current=null}},[]);
+ const update=(id:string,data:any[],kind:"banca"|"escuela"|"salud")=>{const m=mapRef.current;if(m?.isStyleLoaded())(m.getSource(id) as maplibregl.GeoJSONSource|undefined)?.setData(fc(data,kind))}; useEffect(()=>update("bancas",p.data,"banca"),[p.data]);useEffect(()=>update("escuelas",p.escuelas,"escuela"),[p.escuelas]);useEffect(()=>update("salud",p.salud,"salud"),[p.salud]);
+ useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;[["escuelas",p.showEscuelas],["salud",p.showSalud]].forEach(([id,v])=>[`${id}-clusters`,`${id}-count`,`${id}-point`].forEach(l=>m.setLayoutProperty(l,"visibility",v?"visible":"none")))},[p.showEscuelas,p.showSalud]);
+ useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;const features:GeoJSON.Feature<GeoJSON.LineString>[]=[];const b=p.data.find(x=>x.id===p.selectedId);if(b){m.flyTo({center:[b.lng,b.lat],zoom:Math.max(m.getZoom(),14)});features.push({type:"Feature",properties:{color:"#8b5cf6"},geometry:{type:"LineString",coordinates:[[b.lng,b.lat],[b.escuelaLng,b.escuelaLat]]}})};(m.getSource("analysis-lines") as maplibregl.GeoJSONSource)?.setData({type:"FeatureCollection",features})},[p.selectedId,p.data]);
+ useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;(m.getSource("simulation") as maplibregl.GeoJSONSource)?.setData(p.simulationPoint?{type:"FeatureCollection",features:[{type:"Feature",properties:{},geometry:{type:"Point",coordinates:[p.simulationPoint.lng,p.simulationPoint.lat]}}]}:emptyPoint);if(p.simulationPoint)m.flyTo({center:[p.simulationPoint.lng,p.simulationPoint.lat],zoom:15})},[p.simulationPoint]);
+ return <div ref={el} className={`map ${p.simulationMode?"simulation-cursor":""}`} aria-label="Mapa territorial de República Dominicana"/>;
 }

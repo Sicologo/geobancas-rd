@@ -1,172 +1,48 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import {useEffect,useMemo,useState} from "react";
 import GeoMap from "@/components/GeoMap";
-import {
-  expandirBanca, expandirEscuela,
-  type Banca, type BancasPayload, type Escuela, type EscuelasPayload,
-} from "@/lib/sample-data";
-
-const all = "Todos";
-const formatDistance = (meters: number) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`;
-const LOTTERY_SCHOOL_LIMIT_M = 200;
-
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const radius = 6371000;
-  const toRad = (value: number) => value * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+import {expandirBanca,expandirEscuela,expandirSalud,type Banca,type BancasPayload,type Escuela,type EscuelasPayload,type Salud,type SaludPayload} from "@/lib/sample-data";
+const ALL="Todos", SCHOOL_LIMIT=200, HEALTH_LIMIT=200;
+const distance=(a:{lat:number;lng:number},b:{lat:number;lng:number})=>{const r=6371000,rad=(v:number)=>v*Math.PI/180,dlat=rad(b.lat-a.lat),dlng=rad(b.lng-a.lng),x=Math.sin(dlat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dlng/2)**2;return r*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))};
+const fmt=(m:number)=>m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(2)} km`;
+function nearest<T extends {lat:number;lng:number}>(p:{lat:number;lng:number},items:T[]){let item:T|undefined,d=Infinity;for(const x of items){const n=distance(p,x);if(n<d){d=n;item=x}}return {item,d}}
+type Sim={point:{lat:number;lng:number};school?:Escuela;schoolD:number;health?:Salud;healthD:number};
+export default function Home(){
+ const [bancas,setBancas]=useState<Banca[]>([]),[escuelas,setEscuelas]=useState<Escuela[]>([]),[salud,setSalud]=useState<Salud[]>([]);const [meta,setMeta]=useState({total:0,mapped:0,pending:0}),[schoolMeta,setSchoolMeta]=useState({mapped:0,source:""}),[healthMeta,setHealthMeta]=useState({mapped:0,source:""});
+ const [query,setQuery]=useState(""),[province,setProvince]=useState(ALL),[status,setStatus]=useState(ALL),[risk,setRisk]=useState(ALL);const [showSchools,setShowSchools]=useState(true),[showHealth,setShowHealth]=useState(false),[panel,setPanel]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ const [selected,setSelected]=useState<Banca|null>(null),[selectedSchool,setSelectedSchool]=useState<Escuela|null>(null),[selectedHealth,setSelectedHealth]=useState<Salud|null>(null);const [simMode,setSimMode]=useState(false),[sim,setSim]=useState<Sim|null>(null);
+ useEffect(()=>{Promise.all([fetch("/data/bancas.json").then(r=>r.json() as Promise<BancasPayload>),fetch("/data/escuelas.json").then(r=>r.json() as Promise<EscuelasPayload>),fetch("/data/salud.json").then(r=>r.json() as Promise<SaludPayload>)]).then(([b,e,s])=>{setBancas(b.records.map(expandirBanca));setEscuelas(e.records.map(expandirEscuela));setSalud(s.records.map(expandirSalud));setMeta(b.meta);setSchoolMeta(e.meta);setHealthMeta(s.meta);setLoading(false)}).catch(()=>{setError("No fue posible cargar las capas geográficas");setLoading(false)})},[]);
+ const provinces=useMemo(()=>[ALL,...Array.from(new Set(bancas.map(b=>b.provincia))).sort()],[bancas]);
+ const filtered=useMemo(()=>{const q=query.trim().toLowerCase();return bancas.filter(b=>(!q||[b.id,b.nombre,b.propietario,b.provincia,b.municipio,b.sector,b.direccion].some(v=>v.toLowerCase().includes(q)))&&(province===ALL||b.provincia===province)&&(status===ALL||b.estatus===status)&&(risk===ALL||b.riesgo===risk))},[bancas,query,province,status,risk]);
+ const schools=useMemo(()=>province===ALL?escuelas:escuelas.filter(x=>x.provincia===province),[escuelas,province]), health=useMemo(()=>province===ALL?salud:salud.filter(x=>x.provincia===province),[salud,province]);
+ const chooseBanca=(b:Banca)=>{const n=nearest(b,escuelas);setSelected({...b,escuelaCercanaCodigo:n.item?.codigo||"",escuelaCercanaNombre:n.item?.nombre||"",escuelaDistanciaM:n.d,escuelaLat:n.item?.lat||0,escuelaLng:n.item?.lng||0});setSelectedSchool(null);setSelectedHealth(null);setSim(null)};
+ const simulate=(point:{lat:number;lng:number})=>{const a=nearest(point,escuelas),h=nearest(point,salud);setSim({point,school:a.item,schoolD:a.d,health:h.item,healthD:h.d});setSelected(null);setSelectedSchool(null);setSelectedHealth(null);setShowSchools(true);setShowHealth(true)};
+ const closeCards=()=>{setSelected(null);setSelectedSchool(null);setSelectedHealth(null);setSim(null)};
+ return <main className="app-shell">
+  <header className="app-header"><div className="brand-lockup"><div className="brand-mark">GB</div><div><strong>GeoBancas RD</strong><span>Inteligencia territorial y cumplimiento</span></div></div><div className="header-actions"><button className="ghost-button desktop-only">Exportar</button><button className={`primary-button ${simMode?"active-mode":""}`} onClick={()=>{setSimMode(v=>!v);closeCards()}}>{simMode?"Salir del simulador":"Simular ubicación"}</button><div className="user-chip"><span>SC</span><div><strong>Sicologo</strong><small>Administrador</small></div></div></div></header>
+  <section className="map-workspace">
+   <GeoMap data={filtered} escuelas={schools} salud={health} showEscuelas={showSchools} showSalud={showHealth} selectedId={selected?.id} selectedEscuelaCodigo={selectedSchool?.codigo} selectedSaludId={selectedHealth?.id} simulationMode={simMode} simulationPoint={sim?.point} onSimulationPoint={simulate} onSelect={chooseBanca} onSelectEscuela={x=>{setSelectedSchool(x);setSelected(null);setSelectedHealth(null);setSim(null)}} onSelectSalud={x=>{setSelectedHealth(x);setSelected(null);setSelectedSchool(null);setSim(null)}}/>
+   {(loading||error)&&<div className={`data-state ${error?"error":""}`}><span className="loader"/><div><strong>{error||"Cargando plataforma territorial"}</strong><small>{error?"Revisa los archivos públicos.":"Preparando bancas, escuelas y centros de salud…"}</small></div></div>}
+   {simMode&&!sim&&<div className="sim-hint"><strong>Simulador de viabilidad</strong><span>Toca cualquier punto del mapa para analizar el local.</span></div>}
+   <button className="mobile-filter-button" onClick={()=>setPanel(true)}>☰ Filtros y capas</button>
+   <aside className={`control-panel ${panel?"mobile-open":""}`}><div className="panel-head"><div><span className="eyebrow">Control geográfico</span><h1>Mapa nacional</h1></div><button className="icon-button" onClick={()=>setPanel(false)}>×</button></div>
+    <label className="search-box"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar banca, propietario o ubicación"/></label>
+    <div className="filter-grid"><label><span>Provincia</span><select value={province} onChange={e=>setProvince(e.target.value)}>{provinces.map(x=><option key={x}>{x}</option>)}</select></label><label><span>Estatus</span><select value={status} onChange={e=>setStatus(e.target.value)}><option>Todos</option><option>Legal</option><option>Ilegal</option><option>Pendiente</option><option>Suspendida</option></select></label><label><span>Riesgo</span><select value={risk} onChange={e=>setRisk(e.target.value)}><option>Todos</option><option>Bajo</option><option>Moderado</option><option>Alto</option></select></label></div>
+    <div className="layers-title">Capas territoriales</div><Layer title="Centros educativos" count={schools.length} active={showSchools} color="school" onClick={()=>setShowSchools(v=>!v)}/><Layer title="Centros de salud" count={health.length} active={showHealth} color="health" onClick={()=>setShowHealth(v=>!v)}/>
+    <div className="filter-footer"><strong>{filtered.length.toLocaleString("es-DO")} bancas visibles</strong><button onClick={()=>{setQuery("");setProvince(ALL);setStatus(ALL);setRisk(ALL)}}>Limpiar</button></div>
+   </aside>
+   {panel&&<div className="mobile-overlay" onClick={()=>setPanel(false)}/>} 
+   <section className="map-stats"><article><span>Bancas ubicadas</span><strong>{meta.mapped.toLocaleString("es-DO")}</strong></article><article><span>Escuelas</span><strong>{schoolMeta.mapped.toLocaleString("es-DO")}</strong></article><article><span>Salud</span><strong>{healthMeta.mapped.toLocaleString("es-DO")}</strong></article><article><span>Por validar</span><strong>{meta.pending.toLocaleString("es-DO")}</strong></article></section>
+   {selected&&<Detail title={selected.nombre} code={selected.id} onClose={()=>setSelected(null)}><div className="status-row"><span className={`status-badge ${selected.estatus.toLowerCase()}`}>{selected.estatus}</span><span className={`risk-badge ${selected.riesgo.toLowerCase()}`}>Riesgo {selected.riesgo}</span></div><dl><div><dt>Propietario</dt><dd>{selected.propietario}</dd></div><div><dt>Ubicación</dt><dd>{selected.sector}, {selected.municipio}</dd></div><div><dt>Dirección</dt><dd>{selected.direccion}</dd></div><div><dt>Coordenadas</dt><dd>{selected.lat.toFixed(6)}, {selected.lng.toFixed(6)}</dd></div></dl><Compliance label="Escuela más cercana" name={selected.escuelaCercanaNombre} meters={selected.escuelaDistanciaM} limit={SCHOOL_LIMIT}/><div className="detail-actions"><button>Ver expediente</button><button className="primary-button">Iniciar inspección</button></div></Detail>}
+   {selectedSchool&&<Detail title={selectedSchool.nombre} code={`CENTRO ${selectedSchool.codigo}`} onClose={()=>setSelectedSchool(null)}><span className="school-badge">Centro educativo</span><dl><div><dt>Provincia</dt><dd>{selectedSchool.provincia}</dd></div><div><dt>Municipio</dt><dd>{selectedSchool.municipio}</dd></div><div><dt>Nivel</dt><dd>{selectedSchool.nivel}</dd></div><div><dt>Sector</dt><dd>{selectedSchool.sector}</dd></div></dl><Source text={schoolMeta.source}/></Detail>}
+   {selectedHealth&&<Detail title={selectedHealth.nombre} code={`SALUD ${selectedHealth.id}`} onClose={()=>setSelectedHealth(null)}><span className="health-badge">{selectedHealth.tipo}</span><dl><div><dt>Provincia</dt><dd>{selectedHealth.provincia}</dd></div><div><dt>Municipio</dt><dd>{selectedHealth.municipio}</dd></div><div><dt>Nivel</dt><dd>{selectedHealth.nivel}</dd></div><div><dt>Estado</dt><dd>{selectedHealth.estado}</dd></div><div><dt>Dirección</dt><dd>{selectedHealth.direccion}</dd></div></dl><Source text={healthMeta.source}/></Detail>}
+   {sim&&<Detail title="Análisis del local" code="SIMULADOR TERRITORIAL" onClose={()=>setSim(null)}><div className={`viability ${sim.schoolD>=SCHOOL_LIMIT&&sim.healthD>=HEALTH_LIMIT?"ok":"alert"}`}><strong>{sim.schoolD>=SCHOOL_LIMIT&&sim.healthD>=HEALTH_LIMIT?"Ubicación preliminarmente viable":"Ubicación no recomendada"}</strong><span>Evaluación automática con las capas disponibles.</span></div><Compliance label="Centro educativo" name={sim.school?.nombre||"No identificado"} meters={sim.schoolD} limit={SCHOOL_LIMIT}/><Compliance label="Centro de salud" name={sim.health?.nombre||"No identificado"} meters={sim.healthD} limit={HEALTH_LIMIT}/><small className="legal-note">Resultado preliminar. Requiere medición oficial, validación de coordenadas y revisión de la norma aplicable.</small><button className="full-button" onClick={()=>setSimMode(true)}>Analizar otro punto</button></Detail>}
+   <nav className="mobile-nav"><button onClick={()=>setPanel(true)}>☰<span>Filtros</span></button><button className={simMode?"active":""} onClick={()=>{setSimMode(v=>!v);closeCards()}}>◎<span>Simular</span></button><button onClick={()=>{setShowSchools(v=>!v)}}>▣<span>Escuelas</span></button><button onClick={()=>setShowHealth(v=>!v)}>✚<span>Salud</span></button></nav>
+   <div className="map-status"><span className="pulse"/>Mapa conectado · {filtered.length.toLocaleString("es-DO")} bancas</div>
+  </section>
+ </main>
 }
-
-function attachNearestSchool(banca: Banca, schools: Escuela[]): Banca {
-  if (!schools.length) return banca;
-  let nearest = schools[0];
-  let nearestDistance = haversineMeters(banca.lat, banca.lng, nearest.lat, nearest.lng);
-  for (let i = 1; i < schools.length; i += 1) {
-    const school = schools[i];
-    const distance = haversineMeters(banca.lat, banca.lng, school.lat, school.lng);
-    if (distance < nearestDistance) { nearest = school; nearestDistance = distance; }
-  }
-  return {
-    ...banca,
-    escuelaCercanaCodigo: nearest.codigo,
-    escuelaCercanaNombre: nearest.nombre,
-    escuelaDistanciaM: Math.round(nearestDistance * 10) / 10,
-    escuelaLat: nearest.lat,
-    escuelaLng: nearest.lng,
-  };
-}
-
-export default function Home() {
-  const [bancas, setBancas] = useState<Banca[]>([]);
-  const [escuelas, setEscuelas] = useState<Escuela[]>([]);
-  const [datasetMeta, setDatasetMeta] = useState({ total: 70136, mapped: 0, pending: 70136 });
-  const [schoolMeta, setSchoolMeta] = useState({ total: 0, mapped: 0, invalid: 0, source: "" });
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState(all);
-  const [province, setProvince] = useState(all);
-  const [risk, setRisk] = useState(all);
-  const [selected, setSelected] = useState<Banca | null>(null);
-  const [selectedSchool, setSelectedSchool] = useState<Escuela | null>(null);
-  const [showSchools, setShowSchools] = useState(true);
-  const [filtersOpen, setFiltersOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true); setLoadError(null);
-    Promise.all([
-      fetch("/data/bancas.json", { cache: "force-cache" }).then((r) => {
-        if (!r.ok) throw new Error("No fue posible cargar la base de bancas");
-        return r.json() as Promise<BancasPayload>;
-      }),
-      fetch("/data/escuelas.json", { cache: "force-cache" }).then((r) => {
-        if (!r.ok) throw new Error("No fue posible cargar el listado de escuelas");
-        return r.json() as Promise<EscuelasPayload>;
-      }),
-    ]).then(([bancasPayload, escuelasPayload]) => {
-      if (!active) return;
-      setBancas(bancasPayload.records.map(expandirBanca));
-      setEscuelas(escuelasPayload.records.map(expandirEscuela));
-      setDatasetMeta(bancasPayload.meta);
-      setSchoolMeta(escuelasPayload.meta);
-      setLoading(false);
-    }).catch((error: unknown) => {
-      if (!active) return;
-      console.error(error);
-      setLoadError(error instanceof Error ? error.message : "No fue posible cargar los datos geográficos");
-      setLoading(false);
-    });
-    return () => { active = false; };
-  }, []);
-
-  const provinces = useMemo(() => [all, ...Array.from(new Set(bancas.map((b) => b.provincia))).sort()], [bancas]);
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return bancas.filter((b) => {
-      const matchesQuery = !q || [b.id, b.nombre, b.propietario, b.provincia, b.municipio, b.sector, b.direccion, b.escuelaCercanaNombre].some((v) => v.toLowerCase().includes(q));
-      return matchesQuery && (status === all || b.estatus === status) && (province === all || b.provincia === province) && (risk === all || b.riesgo === risk);
-    });
-  }, [bancas, query, status, province, risk]);
-
-  const filteredSchools = useMemo(() => province === all ? escuelas : escuelas.filter((e) => e.provincia === province), [escuelas, province]);
-  const totals = useMemo(() => ({ total: datasetMeta.total, ubicadas: datasetMeta.mapped, escuelas: schoolMeta.mapped, pendientes: datasetMeta.pending }), [datasetMeta, schoolMeta]);
-  const clearFilters = () => { setQuery(""); setStatus(all); setProvince(all); setRisk(all); setSelected(null); setSelectedSchool(null); };
-
-  useEffect(() => { if (selected && !filtered.some((item) => item.id === selected.id)) setSelected(null); }, [filtered, selected]);
-
-  const selectBanca = (banca: Banca) => {
-    setSelectedSchool(null);
-    setShowSchools(true);
-    setSelected(attachNearestSchool(banca, escuelas));
-  };
-  const selectSchool = (school: Escuela) => { setSelected(null); setSelectedSchool(school); };
-  const openNearestSchool = () => {
-    if (!selected) return;
-    const school = escuelas.find((e) => e.codigo === selected.escuelaCercanaCodigo);
-    if (school) { setShowSchools(true); setSelectedSchool(school); }
-  };
-
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div className="brand-lockup"><div className="brand-mark">GB</div><div><strong>GeoBancas RD</strong><span>Supervisión territorial nacional</span></div></div>
-        <div className="header-actions"><button className="ghost-button">Exportar</button><button className="primary-button">Importar base</button><div className="user-chip"><span>SC</span><div><strong>Sicologo</strong><small>Administrador</small></div></div></div>
-      </header>
-
-      <section className="map-workspace">
-        <GeoMap data={filtered} escuelas={filteredSchools} showEscuelas={showSchools} selectedId={selected?.id} selectedEscuelaCodigo={selectedSchool?.codigo} onSelect={selectBanca} onSelectEscuela={selectSchool} />
-
-        {(loading || loadError) && <div className={`data-state ${loadError ? "error" : ""}`} role="status"><div className="data-state-icon">{loadError ? "!" : <span className="loader" />}</div><div><strong>{loadError ? "No se pudieron cargar los datos" : "Cargando capas geográficas"}</strong><span>{loadError ?? "Preparando bancas, escuelas y distancias…"}</span></div></div>}
-
-        <aside className={`control-panel ${filtersOpen ? "open" : "closed"}`}>
-          <div className="panel-head"><div><span className="eyebrow">Control geográfico</span><h1>Mapa nacional</h1></div><button className="icon-button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros">×</button></div>
-          <label className="search-box"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar banca, código, propietario o escuela" /></label>
-          <div className="filter-grid">
-            <label><span>Provincia</span><select value={province} onChange={(e) => setProvince(e.target.value)}>{provinces.map((p) => <option key={p}>{p}</option>)}</select></label>
-            <label><span>Estatus</span><select value={status} onChange={(e) => setStatus(e.target.value)}><option>Todos</option><option>Legal</option><option>Ilegal</option><option>Pendiente</option><option>Suspendida</option></select></label>
-            <label><span>Nivel de riesgo</span><select value={risk} onChange={(e) => setRisk(e.target.value)}><option>Todos</option><option>Bajo</option><option>Moderado</option><option>Alto</option></select></label>
-          </div>
-          <div className="layer-switch"><div><strong>Capa de escuelas</strong><small>{filteredSchools.length.toLocaleString("es-DO")} centros con coordenadas</small></div><button className={showSchools ? "active" : ""} onClick={() => setShowSchools((v) => !v)} aria-pressed={showSchools}><span /></button></div>
-          <div className="filter-footer"><strong>{loading ? "Cargando…" : `${filtered.length.toLocaleString("es-DO")} bancas visibles`}</strong><button onClick={clearFilters}>Limpiar filtros</button></div>
-          <div className="legend"><strong>Leyenda</strong><div><span className="dot legal" />Legal</div><div><span className="dot pending" />Pendiente</div><div><span className="dot illegal" />Ilegal</div><div><span className="dot suspended" />Suspendida</div><div><span className="dot school" />Escuela</div></div>
-        </aside>
-
-        {!filtersOpen && <button className="open-panel" onClick={() => setFiltersOpen(true)}>Filtros</button>}
-        <section className="map-stats"><article><span>Total registradas</span><strong>{totals.total.toLocaleString("es-DO")}</strong></article><article><span>Con ubicación</span><strong>{totals.ubicadas.toLocaleString("es-DO")}</strong></article><article><span>Escuelas ubicadas</span><strong>{totals.escuelas.toLocaleString("es-DO")}</strong></article><article><span>Por validar</span><strong>{totals.pendientes.toLocaleString("es-DO")}</strong></article></section>
-        <div className="map-tools"><button title="Capas" onClick={() => setShowSchools((v) => !v)}>▱</button><button title="Mapa de calor">◉</button><button title="Medir distancia">↔</button></div>
-
-        {selected && <aside className="detail-card">
-          <div className="detail-top"><div><span className="record-code">{selected.id}</span><h2>{selected.nombre}</h2></div><button onClick={() => setSelected(null)}>×</button></div>
-          <div className="status-row"><span className={`status-badge ${selected.estatus.toLowerCase()}`}>{selected.estatus}</span><span className={`risk-badge ${selected.riesgo.toLowerCase()}`}>Riesgo {selected.riesgo}</span></div>
-          <dl><div><dt>Propietario</dt><dd>{selected.propietario}</dd></div><div><dt>Ubicación</dt><dd>{selected.sector}, {selected.municipio}</dd></div><div><dt>Dirección</dt><dd>{selected.direccion}</dd></div><div><dt>Coordenadas</dt><dd>{selected.lat.toFixed(6)}, {selected.lng.toFixed(6)}</dd></div></dl>
-          <div className="proximity-box school-proximity">
-            <span>Escuela más cercana</span>
-            <strong>{selected.escuelaCercanaNombre || "No identificada"}</strong>
-            <div className="distance-value">{Number.isFinite(selected.escuelaDistanciaM) ? formatDistance(selected.escuelaDistanciaM) : "Sin cálculo"}</div>
-            <div className={`compliance-result ${selected.escuelaDistanciaM < LOTTERY_SCHOOL_LIMIT_M ? "alert" : "ok"}`}>
-              <b>{selected.escuelaDistanciaM < LOTTERY_SCHOOL_LIMIT_M ? "Posible incumplimiento" : "Fuera del radio restringido"}</b>
-              <em>Referencia activa: banca de lotería · mínimo {LOTTERY_SCHOOL_LIMIT_M} m lineales</em>
-              <small>{selected.escuelaDistanciaM < LOTTERY_SCHOOL_LIMIT_M ? `Faltan aproximadamente ${Math.ceil(LOTTERY_SCHOOL_LIMIT_M - selected.escuelaDistanciaM)} m para alcanzar la distancia mínima.` : `Supera la referencia por aproximadamente ${Math.floor(selected.escuelaDistanciaM - LOTTERY_SCHOOL_LIMIT_M)} m.`}</small>
-            </div>
-            <small>Distancia geodésica en línea recta entre las coordenadas disponibles. Debe confirmarse mediante inspección y medición oficial.</small>
-            <button onClick={openNearestSchool}>Ver escuela y línea de distancia</button>
-          </div>
-          <div className="detail-actions"><button>Ver expediente</button><button className="primary-button">Inspeccionar</button></div>
-        </aside>}
-
-        {selectedSchool && <aside className="detail-card school-card">
-          <div className="detail-top"><div><span className="record-code">CENTRO {selectedSchool.codigo}</span><h2>{selectedSchool.nombre}</h2></div><button onClick={() => setSelectedSchool(null)}>×</button></div>
-          <div className="status-row"><span className="school-badge">Centro educativo</span><span className="risk-badge">{selectedSchool.sector || "Sin sector"}</span></div>
-          <dl><div><dt>Provincia</dt><dd>{selectedSchool.provincia}</dd></div><div><dt>Municipio</dt><dd>{selectedSchool.municipio}</dd></div><div><dt>Nivel</dt><dd>{selectedSchool.nivel}</dd></div><div><dt>Matrícula</dt><dd>{selectedSchool.matricula.toLocaleString("es-DO")}</dd></div><div><dt>Regional</dt><dd>{selectedSchool.regional}</dd></div><div><dt>Distrito</dt><dd>{selectedSchool.distrito}</dd></div></dl>
-          <div className="proximity-box"><span>Fuente</span><strong>{schoolMeta.source}</strong><small>Registro cargado desde el archivo oficial suministrado.</small></div>
-        </aside>}
-
-        <div className="map-status"><span className={`pulse ${loadError ? "offline" : ""}`} />{loadError ? "Datos no disponibles" : loading ? "Cargando capas nacionales…" : `Mapa conectado · ${filtered.length.toLocaleString("es-DO")} bancas · ${showSchools ? `${filteredSchools.length.toLocaleString("es-DO")} escuelas` : "escuelas ocultas"}`}</div>
-      </section>
-    </main>
-  );
-}
+function Layer({title,count,active,color,onClick}:{title:string;count:number;active:boolean;color:string;onClick:()=>void}){return <div className="layer-switch"><div><i className={`layer-dot ${color}`}/><strong>{title}</strong><small>{count.toLocaleString("es-DO")} ubicaciones</small></div><button className={active?"active":""} onClick={onClick}><span/></button></div>}
+function Detail({title,code,onClose,children}:{title:string;code:string;onClose:()=>void;children:React.ReactNode}){return <aside className="detail-card"><div className="detail-handle"/><div className="detail-top"><div><span className="record-code">{code}</span><h2>{title}</h2></div><button onClick={onClose}>×</button></div>{children}</aside>}
+function Compliance({label,name,meters,limit}:{label:string;name:string;meters:number;limit:number}){const ok=meters>=limit;return <div className="proximity-box"><span>{label}</span><strong>{name}</strong><div className="distance-value">{fmt(meters)}</div><div className={`compliance-result ${ok?"ok":"alert"}`}><b>{ok?"Fuera del radio restringido":"Posible incumplimiento"}</b><em>Referencia activa: mínimo {limit} m lineales</em><small>{ok?`Supera la referencia por ${Math.floor(meters-limit)} m.`:`Faltan aproximadamente ${Math.ceil(limit-meters)} m.`}</small></div></div>}
+function Source({text}:{text:string}){return <div className="proximity-box"><span>Fuente de datos</span><strong>{text}</strong><small>Registro geográfico suministrado e integrado a la plataforma.</small></div>}
