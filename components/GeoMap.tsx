@@ -6,7 +6,47 @@ import type {Banca,Escuela,Salud} from "@/lib/sample-data";
 type Point={lat:number;lng:number};
 type Props={data:Banca[];escuelas:Escuela[];salud:Salud[];showEscuelas:boolean;showSalud:boolean;selectedId?:string;selectedEscuelaCodigo?:string;selectedSaludId?:string;simulationPoint?:Point|null;onSelect:(b:Banca)=>void;onSelectEscuela:(e:Escuela)=>void;onSelectSalud:(s:Salud)=>void;onSimulationPoint:(p:Point)=>void;simulationMode:boolean};
 const statusColor:Record<Banca["estatus"],string>={Legal:"#2ecc71",Ilegal:"#ff5c73",Pendiente:"#f5b942",Suspendida:"#87a4bf"};
-const fc=(items:any[],kind:"banca"|"escuela"|"salud"):GeoJSON.FeatureCollection<GeoJSON.Point>=>({type:"FeatureCollection",features:items.map((x:any)=>({type:"Feature",geometry:{type:"Point",coordinates:[x.lng,x.lat]},properties:{...x,color:kind==="banca"?statusColor[x.estatus]:kind==="escuela"?"#8b5cf6":"#22c9f4"}}))});
+function bancasGeoJSON(items: Banca[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: "FeatureCollection",
+    features: items.map((b): GeoJSON.Feature<GeoJSON.Point> => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [b.lng, b.lat] },
+      properties: { ...b, color: statusColor[b.estatus] },
+    })),
+  };
+}
+
+function escuelasGeoJSON(items: Escuela[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: "FeatureCollection",
+    features: items.map((e): GeoJSON.Feature<GeoJSON.Point> => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [e.lng, e.lat] },
+      properties: { ...e, color: "#8b5cf6" },
+    })),
+  };
+}
+
+function saludGeoJSON(items: Salud[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: "FeatureCollection",
+    features: items.map((s): GeoJSON.Feature<GeoJSON.Point> => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [s.lng, s.lat] },
+      properties: { ...s, color: "#22c9f4" },
+    })),
+  };
+}
+
+function fc(
+  items: Banca[] | Escuela[] | Salud[],
+  kind: "banca" | "escuela" | "salud",
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  if (kind === "banca") return bancasGeoJSON(items as Banca[]);
+  if (kind === "escuela") return escuelasGeoJSON(items as Escuela[]);
+  return saludGeoJSON(items as Salud[]);
+}
 const emptyLine:GeoJSON.FeatureCollection<GeoJSON.LineString>={type:"FeatureCollection",features:[]};
 const emptyPoint:GeoJSON.FeatureCollection<GeoJSON.Point>={type:"FeatureCollection",features:[]};
 export default function GeoMap(p:Props){
@@ -22,7 +62,7 @@ export default function GeoMap(p:Props){
   map.on("click","bancas-point",e=>{const id=e.features?.[0]?.properties?.id;const x=refs.current.data.find(v=>v.id===id);if(x)refs.current.onSelect(x)});map.on("click","escuelas-point",e=>{const id=e.features?.[0]?.properties?.codigo;const x=refs.current.escuelas.find(v=>v.codigo===id);if(x)refs.current.onSelectEscuela(x)});map.on("click","salud-point",e=>{const id=e.features?.[0]?.properties?.id;const x=refs.current.salud.find(v=>v.id===id);if(x)refs.current.onSelectSalud(x)});
   map.on("click",e=>{if(refs.current.simulationMode && !(e.originalEvent.target as HTMLElement).closest(".maplibregl-marker")) refs.current.onSimulationPoint({lng:e.lngLat.lng,lat:e.lngLat.lat})});
  }); mapRef.current=map;return()=>{map.remove();mapRef.current=null}},[]);
- const update=(id:string,data:any[],kind:"banca"|"escuela"|"salud")=>{const m=mapRef.current;if(m?.isStyleLoaded())(m.getSource(id) as maplibregl.GeoJSONSource|undefined)?.setData(fc(data,kind))}; useEffect(()=>update("bancas",p.data,"banca"),[p.data]);useEffect(()=>update("escuelas",p.escuelas,"escuela"),[p.escuelas]);useEffect(()=>update("salud",p.salud,"salud"),[p.salud]);
+ const update=(id:string,data:Banca[]|Escuela[]|Salud[],kind:"banca"|"escuela"|"salud")=>{const m=mapRef.current;if(m?.isStyleLoaded())(m.getSource(id) as maplibregl.GeoJSONSource|undefined)?.setData(fc(data,kind))}; useEffect(()=>update("bancas",p.data,"banca"),[p.data]);useEffect(()=>update("escuelas",p.escuelas,"escuela"),[p.escuelas]);useEffect(()=>update("salud",p.salud,"salud"),[p.salud]);
  useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;[["escuelas",p.showEscuelas],["salud",p.showSalud]].forEach(([id,v])=>[`${id}-clusters`,`${id}-count`,`${id}-point`].forEach(l=>m.setLayoutProperty(l,"visibility",v?"visible":"none")))},[p.showEscuelas,p.showSalud]);
  useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;const features:GeoJSON.Feature<GeoJSON.LineString>[]=[];const b=p.data.find(x=>x.id===p.selectedId);if(b){m.flyTo({center:[b.lng,b.lat],zoom:Math.max(m.getZoom(),14)});features.push({type:"Feature",properties:{color:"#8b5cf6"},geometry:{type:"LineString",coordinates:[[b.lng,b.lat],[b.escuelaLng,b.escuelaLat]]}})};(m.getSource("analysis-lines") as maplibregl.GeoJSONSource)?.setData({type:"FeatureCollection",features})},[p.selectedId,p.data]);
  useEffect(()=>{const m=mapRef.current;if(!m?.isStyleLoaded())return;(m.getSource("simulation") as maplibregl.GeoJSONSource)?.setData(p.simulationPoint?{type:"FeatureCollection",features:[{type:"Feature",properties:{},geometry:{type:"Point",coordinates:[p.simulationPoint.lng,p.simulationPoint.lat]}}]}:emptyPoint);if(p.simulationPoint)m.flyTo({center:[p.simulationPoint.lng,p.simulationPoint.lat],zoom:15})},[p.simulationPoint]);
