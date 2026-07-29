@@ -48,8 +48,19 @@ export default function GeoMap({ data, escuelas, showEscuelas, selectedId, selec
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    const dominicanRepublicBounds: [[number, number], [number, number]] = [
+      [-72.15, 17.30], // Suroeste: frontera, Pedernales y mar territorial cercano
+      [-68.05, 20.15], // Noreste: costa norte, Samaná y La Altagracia
+    ];
+
     const map = new maplibregl.Map({
-      container: containerRef.current, center: [-70.1627, 18.7357], zoom: 7, minZoom: 6.3,
+      container: containerRef.current,
+      center: [-70.1627, 18.7357],
+      zoom: 7.15,
+      minZoom: 6.6,
+      maxZoom: 19,
+      maxBounds: dominicanRepublicBounds,
+      renderWorldCopies: false,
       style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
         sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } },
         layers: [{ id: "osm", type: "raster", source: "osm" }] },
