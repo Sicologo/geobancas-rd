@@ -25,3 +25,6 @@ La estructura `analysisTargets` permite agregar en el futuro iglesias, CAID, des
 - Bancas en vista nacional mediante mapa de densidad; clusters compactos en zoom medio y puntos mínimos en zoom cercano.
 - Mapa base CARTO Light para una apariencia ejecutiva.
 - Indicadores superiores y panel lateral más compactos.
+
+## Motor normativo geoespacial
+Esta versión aplica referencias configuradas para el Artículo 26: 500 m respecto de las capas protegidas disponibles (centros educativos, salud y destacamentos) y 200 m entre bancas de lotería. El resultado es una alerta territorial preliminar, no una determinación jurídica definitiva. Para aplicar excepciones por preexistencia (Art. 178) se requiere incorporar fecha y resolución de autorización.

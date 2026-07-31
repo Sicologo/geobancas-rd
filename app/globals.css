@@ -91,3 +91,30 @@
 .map-stats{grid-template-columns:repeat(6,108px)}
 @media(max-width:1100px){.map-stats{grid-template-columns:repeat(3,102px)}}
 @media(max-width:760px){.mobile-nav{grid-template-columns:repeat(5,1fr)}.map-stats{display:flex}}
+
+/* Motor normativo Art. 26 y análisis de proximidad */
+.regulatory-summary,.nearby-banks{margin:10px 0;padding:11px;border:1px solid var(--border);border-radius:11px;background:var(--panel2)}
+.regulatory-summary.alert,.nearby-banks.alert{border-color:rgba(255,92,115,.42)}
+.regulatory-summary.ok,.nearby-banks.ok{border-color:rgba(46,204,113,.32)}
+.regulatory-summary span,.regulatory-summary strong,.regulatory-summary small{display:block}
+.regulatory-summary span,.nearby-head span{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.regulatory-summary strong{margin:4px 0;font-size:13px}
+.regulatory-summary small{color:var(--muted);font-size:9px;line-height:1.45}
+.nearby-head,.nearby-item{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nearby-head b{min-width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:rgba(255,92,115,.14);color:var(--danger)}
+.nearby-head strong{display:block;margin-top:3px;font-size:12px}
+.nearby-item{padding:8px 0;border-top:1px solid rgba(34,201,244,.08)}
+.nearby-item:first-of-type{margin-top:8px}.nearby-item strong,.nearby-item span{display:block}.nearby-item strong{font-size:10px}.nearby-item span{margin-top:2px;color:var(--muted);font-size:8px}.nearby-item em{color:var(--danger);font-size:10px;font-style:normal;font-weight:900}
+.measure-bank.rich{align-items:flex-start}.measure-bank.rich>div{min-width:0}.measure-bank.rich small{display:block;margin-top:3px;color:var(--muted);font-size:8px;white-space:normal}.measure-compliance{margin:8px 0;padding:9px;border-radius:9px;text-align:center}.measure-compliance strong,.measure-compliance span{display:block}.measure-compliance strong{font-size:11px}.measure-compliance span{margin-top:3px;font-size:8px}.measure-compliance.ok{background:rgba(46,204,113,.12);color:var(--success)}.measure-compliance.alert{background:rgba(255,92,115,.12);color:var(--danger)}
+
+/* Interacción y estadísticas contextuales */
+.proximity-link{display:block;width:100%;text-align:left;color:var(--text);cursor:pointer;font:inherit;transition:border-color .16s ease,transform .16s ease,background .16s ease}
+.proximity-link:hover{border-color:rgba(34,201,244,.55);background:#101d2d;transform:translateY(-1px)}
+.open-record{display:block;margin-top:8px;color:var(--cyan);font-weight:800;font-size:9px}
+.nearby-link{width:100%;border:0;background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.nearby-link:hover{background:rgba(34,201,244,.055)}
+.map-stats{grid-template-columns:repeat(6,104px)}
+.map-stats article{min-height:48px;padding:7px 9px}
+.map-stats span{font-size:7px;line-height:1.15}
+.map-stats strong{font-size:13px}
+@media(max-width:1180px){.map-stats{grid-template-columns:repeat(3,100px)}}
