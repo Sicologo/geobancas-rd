@@ -16,3 +16,12 @@ La estructura `analysisTargets` permite agregar en el futuro iglesias, CAID, des
 - Líneas de proximidad de escuelas y salud conservadas.
 - Visibilidad individual para bancas, escuelas, salud, líneas, estadísticas, ficha de detalle, estado inferior y panel de control.
 - El botón X del panel conserva su animación y puede reabrirse desde la barra central.
+
+## Interfaz cartográfica V2
+- Buscador con botón de limpieza rápida.
+- Enter oculta el panel y deja disponible el control de reapertura.
+- Escuelas y salud desactivadas inicialmente.
+- Escuelas y salud aparecen solo con acercamiento suficiente.
+- Bancas en vista nacional mediante mapa de densidad; clusters compactos en zoom medio y puntos mínimos en zoom cercano.
+- Mapa base CARTO Light para una apariencia ejecutiva.
+- Indicadores superiores y panel lateral más compactos.
