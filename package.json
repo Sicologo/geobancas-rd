@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "node ./scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node ./scripts/copy-maplibre-worker.mjs",
     "build": "next build",
+    "prestart": "node ./scripts/copy-maplibre-worker.mjs",
     "start": "next start",
     "lint": "next lint"
   },

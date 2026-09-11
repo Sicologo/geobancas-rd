@@ -11,10 +11,10 @@ type Props={data:Banca[];revealFiltered:boolean;escuelas:Escuela[];salud:Salud[]
 const statusColor:Record<Banca["estatus"],string>={Legal:"#2ecc71",Ilegal:"#ff5c73",Pendiente:"#f5b942",Suspendida:"#87a4bf"};
 const emptyLine:GeoJSON.FeatureCollection<GeoJSON.LineString>={type:"FeatureCollection",features:[]};
 const emptyPoint:GeoJSON.FeatureCollection<GeoJSON.Point>={type:"FeatureCollection",features:[]};
-function bancasGeoJSON(items:Banca[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(b=>({type:"Feature",geometry:{type:"Point",coordinates:[b.lng,b.lat]},properties:{...b,color:statusColor[b.estatus]}}))}}
-function escuelasGeoJSON(items:Escuela[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(e=>({type:"Feature",geometry:{type:"Point",coordinates:[e.lng,e.lat]},properties:{...e,color:"#8b5cf6"}}))}}
-function saludGeoJSON(items:Salud[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(s=>({type:"Feature",geometry:{type:"Point",coordinates:[s.lng,s.lat]},properties:{...s,color:"#22c9f4"}}))}}
-function destacamentosGeoJSON(items:Destacamento[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(d=>({type:"Feature",geometry:{type:"Point",coordinates:[d.lng,d.lat]},properties:{...d,color:"#f59e0b"}}))}}
+function bancasGeoJSON(items:Banca[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(b=>({type:"Feature",id:b.id,geometry:{type:"Point",coordinates:[b.lng,b.lat]},properties:{id:b.id,estatus:b.estatus,color:statusColor[b.estatus]}}))}}
+function escuelasGeoJSON(items:Escuela[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(e=>({type:"Feature",id:e.codigo,geometry:{type:"Point",coordinates:[e.lng,e.lat]},properties:{codigo:e.codigo,color:"#8b5cf6"}}))}}
+function saludGeoJSON(items:Salud[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(s=>({type:"Feature",id:s.id,geometry:{type:"Point",coordinates:[s.lng,s.lat]},properties:{id:s.id,color:"#22c9f4"}}))}}
+function destacamentosGeoJSON(items:Destacamento[]):GeoJSON.FeatureCollection<GeoJSON.Point>{return{type:"FeatureCollection",features:items.map(d=>({type:"Feature",id:d.id,geometry:{type:"Point",coordinates:[d.lng,d.lat]},properties:{id:d.id,color:"#f59e0b"}}))}}
 function fc(items:Banca[]|Escuela[]|Salud[]|Destacamento[],kind:"banca"|"escuela"|"salud"|"destacamento"){if(kind==="banca")return bancasGeoJSON(items as Banca[]);if(kind==="escuela")return escuelasGeoJSON(items as Escuela[]);if(kind==="salud")return saludGeoJSON(items as Salud[]);return destacamentosGeoJSON(items as Destacamento[])}
 function makeMapIcon(kind:"school"|"health"|"police"|"banca-legal"|"banca-ilegal"|"banca-pendiente"|"banca-suspendida"):ImageData{
  const size=48,canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;const c=canvas.getContext("2d");if(!c)throw new Error("Canvas no disponible");
@@ -49,10 +49,14 @@ function registerMapIcons(map:Map){
 }
 
 export default function GeoMap(p:Props){
+ // MapLibre v6 en Next.js necesita un worker servido junto con maplibre-gl-shared.mjs.
+ // Los scripts predev/prebuild/prestart copian ambos archivos desde node_modules a public/maplibre.
+ if(typeof window!=="undefined"&&maplibregl.getWorkerUrl()!=="/maplibre/maplibre-gl-worker.mjs")maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
  const el=useRef<HTMLDivElement|null>(null),mapRef=useRef<Map|null>(null),refs=useRef(p);useEffect(()=>{refs.current=p},[p]);
  useEffect(()=>{if(!el.current||mapRef.current)return;
   const map=new maplibregl.Map({container:el.current,center:[-70.1627,18.7357],zoom:7.15,minZoom:6.6,maxZoom:19,maxBounds:[[-72.15,17.3],[-68.05,20.15]],renderWorldCopies:false,style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},layers:[{id:"osm",type:"raster",source:"osm",paint:{"raster-saturation":-.28,"raster-contrast":.02,"raster-brightness-min":.08,"raster-brightness-max":.98}}]}});
   map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
+  map.on("error",e=>console.error("[GeoBancas/MapLibre]",e.error));
   map.on("load",()=>{
    registerMapIcons(map);
    map.addSource("bancas-heat",{type:"geojson",data:bancasGeoJSON(refs.current.data)});

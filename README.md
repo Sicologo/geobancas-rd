@@ -23,8 +23,14 @@ La estructura `analysisTargets` permite agregar en el futuro iglesias, CAID, des
 - Escuelas y salud desactivadas inicialmente.
 - Escuelas y salud aparecen solo con acercamiento suficiente.
 - Bancas en vista nacional mediante mapa de densidad; clusters compactos en zoom medio y puntos mínimos en zoom cercano.
-- Mapa base CARTO Light para una apariencia ejecutiva.
+- Mapa base OpenStreetMap sin dependencia de API key de CARTO.
 - Indicadores superiores y panel lateral más compactos.
 
 ## Motor normativo geoespacial
 Esta versión aplica referencias configuradas para el Artículo 26: 500 m respecto de las capas protegidas disponibles (centros educativos, salud y destacamentos) y 200 m entre bancas de lotería. El resultado es una alerta territorial preliminar, no una determinación jurídica definitiva. Para aplicar excepciones por preexistencia (Art. 178) se requiere incorporar fecha y resolución de autorización.
+
+## MapLibre GL JS 6 / Next.js
+
+Este proyecto usa `maplibre-gl` 6.9.0. En Next.js el worker de MapLibre debe servirse junto con `maplibre-gl-shared.mjs`; por eso `npm run dev`, `npm run build` y `npm start` ejecutan automáticamente `scripts/copy-maplibre-worker.mjs` antes de iniciar. El script copia ambos archivos desde la versión instalada en `node_modules` a `public/maplibre`.
+
+Si el proyecto se recibe sin `package-lock.json`, ejecute `npm install` una vez para regenerarlo con las versiones declaradas en `package.json`.
