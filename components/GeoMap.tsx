@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef} from "react";
-import maplibregl,{Map,MapMouseEvent,MapLayerMouseEvent} from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { Map, MapMouseEvent, MapLayerMouseEvent } from "maplibre-gl";
 import type {Banca,Escuela,Salud,Destacamento} from "@/lib/sample-data";
 
 type Point={lat:number;lng:number};
@@ -50,7 +51,7 @@ function registerMapIcons(map:Map){
 export default function GeoMap(p:Props){
  const el=useRef<HTMLDivElement|null>(null),mapRef=useRef<Map|null>(null),refs=useRef(p);useEffect(()=>{refs.current=p},[p]);
  useEffect(()=>{if(!el.current||mapRef.current)return;
-  const map=new maplibregl.Map({container:el.current,center:[-70.1627,18.7357],zoom:7.15,minZoom:6.6,maxZoom:19,maxBounds:[[-72.15,17.3],[-68.05,20.15]],renderWorldCopies:false,style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{carto:{type:"raster",tiles:["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png","https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"],tileSize:512,attribution:"© OpenStreetMap © CARTO"}},layers:[{id:"carto",type:"raster",source:"carto",paint:{"raster-saturation":-.35,"raster-contrast":.04,"raster-brightness-min":.1,"raster-brightness-max":.96}}]}});
+  const map=new maplibregl.Map({container:el.current,center:[-70.1627,18.7357],zoom:7.15,minZoom:6.6,maxZoom:19,maxBounds:[[-72.15,17.3],[-68.05,20.15]],renderWorldCopies:false,style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:"© OpenStreetMap contributors"}},layers:[{id:"osm",type:"raster",source:"osm",paint:{"raster-saturation":-.28,"raster-contrast":.02,"raster-brightness-min":.08,"raster-brightness-max":.98}}]}});
   map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
   map.on("load",()=>{
    registerMapIcons(map);

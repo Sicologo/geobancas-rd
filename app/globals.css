@@ -113,8 +113,11 @@
 .open-record{display:block;margin-top:8px;color:var(--cyan);font-weight:800;font-size:9px}
 .nearby-link{width:100%;border:0;background:transparent;color:var(--text);text-align:left;cursor:pointer}
 .nearby-link:hover{background:rgba(34,201,244,.055)}
-.map-stats{grid-template-columns:repeat(6,104px)}
+.map-stats{grid-template-columns:repeat(7,100px)}
 .map-stats article{min-height:48px;padding:7px 9px}
 .map-stats span{font-size:7px;line-height:1.15}
 .map-stats strong{font-size:13px}
-@media(max-width:1180px){.map-stats{grid-template-columns:repeat(3,100px)}}
+.map-stats .employment-stat{border-color:rgba(46,204,113,.28)}
+.map-stats .employment-stat small{display:block;margin-top:1px;color:var(--muted);font-size:6px;line-height:1.1}
+@media(max-width:1280px){.map-stats{grid-template-columns:repeat(4,100px)}}
+@media(max-width:900px){.map-stats{grid-template-columns:repeat(3,100px)}}
