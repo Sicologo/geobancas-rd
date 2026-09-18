@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/integrar-capas-protegidas-now.yml"
+      - "lib/protected-layers.ts"
 
 permissions:
   contents: write
