@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/corregir-carga-inicial-now.yml"
+      - "scripts/corregir_carga_inicial_mapa.py"
 
 permissions:
   contents: write
