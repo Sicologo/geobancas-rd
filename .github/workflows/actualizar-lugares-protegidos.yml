@@ -17,7 +17,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: actualizar-lugares-protegidos-rd
+  group: actualizar-lugares-protegidos-rd-v3
   cancel-in-progress: true
 
 jobs:
