@@ -10,6 +10,7 @@ on:
       - "scripts/extraer_lugares_protegidos_osm.py"
       - "scripts/extraer_lugares_protegidos_osm_v2.py"
       - "scripts/extraer_lugares_protegidos_osm_v3.py"
+      - "scripts/depurar_capas_institucionales.py"
       - ".github/workflows/actualizar-lugares-protegidos.yml"
       - "public/data/iglesias.json"
 
@@ -38,6 +39,9 @@ jobs:
       - name: Extraer capas protegidas
         run: python scripts/extraer_lugares_protegidos_osm_v3.py
 
+      - name: Depurar sedes institucionales
+        run: python scripts/depurar_capas_institucionales.py
+
       - name: Validar salidas
         run: |
           python - <<'PY'
@@ -61,6 +65,7 @@ jobs:
                   assert isinstance(r.get('lat'), (int, float))
                   assert isinstance(r.get('lon'), (int, float))
               print(f'{layer}: {total} registros OK')
+          assert len(json.loads(Path('public/data/sedes_poderes_estado.json').read_text(encoding='utf-8'))['records']) >= 3, 'Falta una sede principal de los poderes del Estado'
           PY
 
       - name: Guardar datos actualizados
