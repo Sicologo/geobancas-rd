@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "scripts/extraer_lugares_protegidos_osm.py"
+      - "scripts/extraer_lugares_protegidos_osm_v2.py"
       - ".github/workflows/actualizar-lugares-protegidos.yml"
       - "public/data/iglesias.json"
 
@@ -16,12 +17,12 @@ permissions:
 
 concurrency:
   group: actualizar-lugares-protegidos-rd
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   extraer:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,7 +35,7 @@ jobs:
           python-version: "3.12"
 
       - name: Extraer capas protegidas
-        run: python scripts/extraer_lugares_protegidos_osm.py
+        run: python scripts/extraer_lugares_protegidos_osm_v2.py
 
       - name: Validar salidas
         run: |
