@@ -11,6 +11,7 @@ on:
       - "scripts/extraer_lugares_protegidos_osm_v2.py"
       - "scripts/extraer_lugares_protegidos_osm_v3.py"
       - "scripts/depurar_capas_institucionales.py"
+      - "scripts/sembrar_sedes_oficiales.py"
       - ".github/workflows/actualizar-lugares-protegidos.yml"
       - "public/data/iglesias.json"
 
@@ -42,6 +43,9 @@ jobs:
       - name: Depurar sedes institucionales
         run: python scripts/depurar_capas_institucionales.py
 
+      - name: Completar sedes oficiales críticas
+        run: python scripts/sembrar_sedes_oficiales.py
+
       - name: Validar salidas
         run: |
           python - <<'PY'
@@ -65,6 +69,8 @@ jobs:
                   assert isinstance(r.get('lat'), (int, float))
                   assert isinstance(r.get('lon'), (int, float))
               print(f'{layer}: {total} registros OK')
+          powers = json.loads(Path('public/data/sedes_poderes_estado.json').read_text(encoding='utf-8'))['records']
+          assert any('congreso nacional' in r.get('nombre','').casefold() for r in powers), 'Falta Congreso Nacional'
           PY
 
       - name: Guardar datos actualizados
