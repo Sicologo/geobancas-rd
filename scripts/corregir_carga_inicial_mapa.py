@@ -31,8 +31,8 @@ if old_loading in page:
     page=replace_once(page,old_loading,new_loading,'overlay hasta mapa listo')
 
 # 2) GeoMap notifica cuando el primer frame completo está realmente renderizado.
-old_props='onSelectDestacamento:(d:Destacamento)=>void;onSelectProtected:(layer:ProtectedMapLayer["id"],place:ProtectedPlace)=>void;onSimulationPoint:(p:Point)=>void;simulationMode:boolean;measureMode:boolean};'
-new_props='onSelectDestacamento:(d:Destacamento)=>void;onSelectProtected:(layer:ProtectedMapLayer["id"],place:ProtectedPlace)=>void;onSimulationPoint:(p:Point)=>void;onReady?:()=>void;simulationMode:boolean;measureMode:boolean};'
+old_props='onSelectDestacamento:(d:Destacamento)=>void;onSelectProtected:(layer:ProtectedLayerKey,p:ProtectedPlace)=>void;onSimulationPoint:(p:Point)=>void;simulationMode:boolean;measureMode:boolean};'
+new_props='onSelectDestacamento:(d:Destacamento)=>void;onSelectProtected:(layer:ProtectedLayerKey,p:ProtectedPlace)=>void;onSimulationPoint:(p:Point)=>void;onReady?:()=>void;simulationMode:boolean;measureMode:boolean};'
 if old_props in geomap:
     geomap=replace_once(geomap,old_props,new_props,'prop onReady')
 
