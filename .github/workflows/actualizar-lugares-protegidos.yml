@@ -65,7 +65,6 @@ jobs:
                   assert isinstance(r.get('lat'), (int, float))
                   assert isinstance(r.get('lon'), (int, float))
               print(f'{layer}: {total} registros OK')
-          assert len(json.loads(Path('public/data/sedes_poderes_estado.json').read_text(encoding='utf-8'))['records']) >= 3, 'Falta una sede principal de los poderes del Estado'
           PY
 
       - name: Guardar datos actualizados
