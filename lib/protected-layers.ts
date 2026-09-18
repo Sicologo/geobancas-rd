@@ -63,8 +63,17 @@ export type ProtectedMapLayer={
  visible:boolean;
 };
 
-export const emptyProtectedData=()=>Object.fromEntries(PROTECTED_LAYER_CONFIG.map(x=>[x.key,[]])) as Record<ProtectedLayerKey,ProtectedPlace[]>;
-export const defaultProtectedVisibility=()=>Object.fromEntries(PROTECTED_LAYER_CONFIG.map(x=>[x.key,true])) as Record<ProtectedLayerKey,boolean>;
+export const emptyProtectedData=()=>{
+ const data={} as Record<ProtectedLayerKey,ProtectedPlace[]>;
+ for(const x of PROTECTED_LAYER_CONFIG)data[x.key]=[];
+ return data;
+};
+
+export const defaultProtectedVisibility=()=>{
+ const data={} as Record<ProtectedLayerKey,boolean>;
+ for(const x of PROTECTED_LAYER_CONFIG)data[x.key]=true;
+ return data;
+};
 
 export const expandProtectedPlace=(record:ProtectedPlaceRecord,meta?:ProtectedPlacesPayload["meta"]):ProtectedPlace=>({
  id:String(record.id||""),
