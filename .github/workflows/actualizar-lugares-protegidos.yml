@@ -1,0 +1,92 @@
+name: Actualizar lugares protegidos RD
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 7 1 * *"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/extraer_lugares_protegidos_osm.py"
+      - ".github/workflows/actualizar-lugares-protegidos.yml"
+      - "public/data/iglesias.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-lugares-protegidos-rd
+  cancel-in-progress: false
+
+jobs:
+  extraer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Extraer capas protegidas
+        run: python scripts/extraer_lugares_protegidos_osm.py
+
+      - name: Validar salidas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          layers = [
+              'colegios_privados',
+              'universidades',
+              'estancias_infantiles',
+              'centros_discapacidad',
+              'clinicas_centros_salud',
+              'iglesias_incorporadas_candidatas',
+              'cuarteles_recintos_militares',
+              'sedes_poderes_estado',
+              'organos_extrapoder',
+          ]
+          for layer in layers:
+              p = Path('public/data') / f'{layer}.json'
+              assert p.exists(), f'Falta {p}'
+              data = json.loads(p.read_text(encoding='utf-8'))
+              total = data.get('meta', {}).get('total', 0)
+              records = data.get('records', [])
+              assert total > 0, f'{layer}: 0 registros'
+              assert total == len(records), f'{layer}: meta.total no coincide con records'
+              for r in records:
+                  assert isinstance(r.get('lat'), (int, float))
+                  assert isinstance(r.get('lon'), (int, float))
+              print(f'{layer}: {total} registros OK')
+          PY
+
+      - name: Guardar datos actualizados
+        run: |
+          FILES=(
+            public/data/colegios_privados.json public/data/colegios_privados.geojson
+            public/data/universidades.json public/data/universidades.geojson
+            public/data/estancias_infantiles.json public/data/estancias_infantiles.geojson
+            public/data/centros_discapacidad.json public/data/centros_discapacidad.geojson
+            public/data/clinicas_centros_salud.json public/data/clinicas_centros_salud.geojson
+            public/data/iglesias_incorporadas_candidatas.json public/data/iglesias_incorporadas_candidatas.geojson
+            public/data/cuarteles_recintos_militares.json public/data/cuarteles_recintos_militares.geojson
+            public/data/sedes_poderes_estado.json public/data/sedes_poderes_estado.geojson
+            public/data/organos_extrapoder.json public/data/organos_extrapoder.geojson
+          )
+          git add "${FILES[@]}"
+          if git diff --cached --quiet; then
+            echo "No hay cambios en las capas protegidas."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: actualizar lugares protegidos de República Dominicana"
+          git pull --rebase origin main
+          git push origin HEAD:main
