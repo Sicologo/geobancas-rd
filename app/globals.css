@@ -138,3 +138,35 @@
 .protected-proximity{width:100%;text-align:left}
 .map-stats article small{display:block;margin-top:3px;color:var(--muted);font-size:8px;line-height:1.25}
 @media(max-width:760px){.mobile-nav{grid-template-columns:repeat(5,1fr)}.protected-details{grid-template-columns:1fr}.layer-actions{position:sticky;top:67px;z-index:2;background:var(--panel);padding:5px 0}}
+
+
+/* Depuracion operativa Sep 2026 */
+@media(min-width:761px){
+ .floating-tools{left:16px!important;right:auto!important;top:16px!important;transform:none!important;flex-direction:column!important;gap:7px!important}
+ .floating-tools.with-panel{left:326px!important}
+ .view-menu{left:70px!important;right:auto!important;top:16px!important;transform:none!important}
+ .view-menu.with-panel{left:380px!important}
+}
+.nearby-empty{padding:12px;border:1px dashed rgba(135,164,191,.28);border-radius:10px;color:var(--muted);font-size:10px;line-height:1.45;background:rgba(13,22,36,.55)}
+.workflow-overlay{position:fixed;z-index:70;inset:68px 0 0;display:grid;place-items:center;padding:24px;background:rgba(3,8,14,.72);backdrop-filter:blur(6px)}
+.workflow-dialog{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 116px);overflow:auto;padding:18px;border:1px solid var(--border);border-radius:17px;background:rgba(8,17,29,.99);box-shadow:0 28px 80px rgba(0,0,0,.58)}
+.workflow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.workflow-head h2{margin:5px 0 3px;font-size:22px}.workflow-head small{color:var(--muted)}
+.workflow-head button{width:34px;height:34px;border:0;border-radius:9px;background:var(--panel3);color:var(--muted);font-size:22px}
+.workflow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.workflow-card{padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--panel2)}
+.workflow-card span,.workflow-card strong{display:block}.workflow-card span{color:var(--muted);font-size:9px}.workflow-card strong{margin-top:5px;font-size:12px;line-height:1.35}
+.workflow-card.alert{border-color:rgba(255,92,115,.38)}.workflow-card.alert strong{color:var(--danger)}.workflow-card.ok strong{color:var(--success)}
+.workflow-section{margin:13px 0;padding:13px;border:1px solid var(--border);border-radius:12px;background:rgba(13,22,36,.62)}
+.workflow-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.workflow-section-head span{color:var(--cyan);font-size:9px;font-weight:900;text-transform:uppercase}.workflow-section-head strong{font-size:18px}
+.workflow-row{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid rgba(34,201,244,.08)}.workflow-row:first-of-type{border-top:0}.workflow-row strong,.workflow-row span{display:block}.workflow-row strong{font-size:11px}.workflow-row span{margin-top:2px;color:var(--muted);font-size:9px}.workflow-row>b{white-space:nowrap;color:var(--text);font-size:12px}
+.workflow-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.workflow-actions button{padding:10px 14px;border:1px solid var(--border);border-radius:9px;background:var(--panel3);color:var(--text);font-weight:800}.workflow-actions .primary-button{background:var(--primary);border-color:var(--primary)}.workflow-actions button:disabled{opacity:.45;cursor:not-allowed}
+.inspection-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}.inspection-form label{display:grid;gap:6px}.inspection-form label>span{color:var(--muted);font-size:9px;font-weight:800}.inspection-form input,.inspection-form select,.inspection-form textarea{width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:9px;outline:0;background:var(--panel2);color:var(--text)}.inspection-form input:focus,.inspection-form select:focus,.inspection-form textarea:focus{border-color:var(--cyan)}.inspection-notes{grid-column:1/-1}.inspection-form textarea{resize:vertical;min-height:120px}.inspection-context{margin-top:12px;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}.inspection-context strong,.inspection-context span{display:block}.inspection-context span{margin-top:4px;color:var(--muted);font-size:10px}
+.app-toast{position:fixed;z-index:90;left:50%;bottom:24px;transform:translateX(-50%);padding:10px 14px;border:1px solid rgba(46,204,113,.38);border-radius:999px;background:rgba(8,17,29,.97);color:var(--success);box-shadow:0 14px 38px rgba(0,0,0,.4);font-size:11px;font-weight:800}
+@media(max-width:760px){
+ .mobile-nav{grid-template-columns:repeat(5,1fr)!important}
+ .workflow-overlay{inset:58px 0 62px;padding:10px;align-items:end}.workflow-dialog{width:100%;max-height:78dvh;border-radius:18px 18px 0 0}.workflow-grid,.inspection-form{grid-template-columns:1fr}.inspection-notes{grid-column:auto}.floating-tools{left:50%!important;top:10px!important;transform:translateX(-50%)!important;flex-direction:row!important}.view-menu{left:10px!important;right:10px!important;top:auto!important;bottom:72px!important;transform:none!important}.app-toast{bottom:76px;max-width:calc(100vw - 24px);text-align:center}
+}
+@media print{
+ body *{visibility:hidden!important}.workflow-overlay,.workflow-overlay *{visibility:visible!important}.workflow-overlay{position:fixed;inset:0;background:#fff!important;color:#111!important;padding:0}.workflow-dialog{width:100%;max-height:none;box-shadow:none;border:0;background:#fff!important;color:#111!important}.workflow-actions,.workflow-head button{display:none!important}.workflow-card,.workflow-section{background:#fff!important;color:#111!important;border-color:#bbb!important}.workflow-row span,.workflow-card span,.legal-note{color:#555!important}
+}
